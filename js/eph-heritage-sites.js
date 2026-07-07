@@ -39,7 +39,7 @@ function renderMapAndPanel() {
   let jedaScroll = null;
   let jedaAutoScroll = null;
   let indexAktif = '-1';
-  let kandidatIndexAkt
+let kandidatIndexAktif = null;
 
   // 1. RAKIT KONTEN HTML PANEL
   TimelineRecords.forEach((record, index) => {
