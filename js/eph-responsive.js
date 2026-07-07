@@ -19,19 +19,17 @@
 
   // 1. Hitung Terbuka (50%)
 function getExpandedY() {
-    // Gunakan tinggi layar fisik (innerHeight), bukan tinggi elemen (offsetHeight)
-    return window.innerHeight / 2; 
-  }
+  return window.innerHeight / 2; // Terbuka tepat setengah layar bersih
+}
+
+function getCollapsedY() {
+  // Ambil tinggi asli header. Jika karena satu hal nilainya 0, pasang fallback 56 sesuai ukuran CSS Anda
+  var headerHeight = (header && header.offsetHeight > 0) ? header.offsetHeight : 56;
   
-  // 2. Hitung Tertutup (Sisa Header)
-  function getCollapsedY() {
-    // Ambil tinggi asli header secara dinamis (mengatasi jika teksnya jadi 2 baris)
-    var headerHeight = header ? header.offsetHeight : 60;
-    
-    // Kurangi tinggi layar fisik dengan tinggi header
-    // Opsional: Anda bisa menambahkan "- 5" di akhir jika ingin ada sedikit jarak aman dari bawah
-    return window.innerHeight - headerHeight; 
-  }
+  // RUMUS SAKTI: Tinggi total layar aktif dikurangi tinggi header. 
+  // Ini menjamin top panel akan berhenti pas di bawah layar (menyisakan headernya saja).
+  return window.innerHeight - headerHeight; 
+}
 
   function clampY(y) {
     return Math.min(Math.max(y, getExpandedY()), getCollapsedY());
