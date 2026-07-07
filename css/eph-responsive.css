@@ -44,6 +44,7 @@
     cursor: grab;
     border-radius: 16px 16px 0 0;
     padding-right: 40px;  /* Ruang agar teks tidak menabrak ikon panah */
+    overflow: hidden;
   }
 
   #branding:active {
