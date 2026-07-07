@@ -80,13 +80,7 @@ let panelHtml = `
       
       // Interaksi: Klik marker di peta akan melakukan auto-scroll panel samping ke item terkait
 marker.on('click', function() {
-        
-        // 1. Buka panel ke posisi 50% jika sedang di mode ponsel
-        if (typeof window.setMobilePanelExpanded === 'function') {
-          window.setMobilePanelExpanded(true); // Memanggil fungsi dari JS responsif
-        }
-        
-        // 2. Gulir panel secara halus (Mencegah glitch scrollIntoView)
+ 
         let detailsContainer = document.getElementById('details');
         let targetItem = document.getElementById(`item-${index}`);
         
