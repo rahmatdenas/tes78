@@ -147,48 +147,50 @@ function renderMapAndPanel() {
     }
   });
 
-  // ==========================================
-  // 4. SCROLLTELLING OBSERVER (Pendeteksi Kandidat)
-  // ==========================================
-  let observer = new IntersectionObserver((entries) => {
-    if (detailsContainer.classList.contains('sedang-auto-scroll')) return;
-
-    let yangMenyentuh = entries.filter(e => e.isIntersecting);
-    if (yangMenyentuh.length === 0) return;
-
-    let entryTerpilih = yangMenyentuh[yangMenyentuh.length - 1];
-    
-    // Karena target kita sekarang adalah container utuh (.timeline-item)
-    // kita bisa langsung ambil getAttribute dari entryTerpilih.target
-    let parentDiv = entryTerpilih.target; 
-    
-    // Catat ke memori sementara (jangan eksekusi peta di sini)
-    kandidatIndexAktif = parentDiv.getAttribute('data-index');
-    
-  }, {
-    root: detailsContainer,
-    rootMargin: '0px 0px -80% 0px', 
-    threshold: 0
-  });
-
-  // Pasang sensor di .timeline-item (Jauh lebih andal dari memantau H2)
-  document.querySelectorAll('.timeline-item').forEach(item => {
-    observer.observe(item);
-  });
-
-  // ==========================================
-  // 5. SCROLL EVENT (Eksekusi Saat Berhenti)
+// ==========================================
+  // 4 & 5. SCROLLTELLING (Radar Posisi Presisi)
   // ==========================================
   detailsContainer.addEventListener('scroll', () => {
+    
+    // Jika sistem yang sedang auto-scroll (karena klik), abaikan agar tidak bentrok
     if (detailsContainer.classList.contains('sedang-auto-scroll')) return;
     
     clearTimeout(jedaScroll);
     
+    // Timer 300ms: Hanya jalankan ini kalau scroll SUDAH BERHENTI TOTAL
     jedaScroll = setTimeout(() => {
-      // Jika gulir berhenti, periksa kandidat
-      if (kandidatIndexAktif !== null && kandidatIndexAktif !== indexAktif) {
+      
+      // 1. Buat "Garis Pemicu" di posisi 15% dari atas layar saat ini
+      // Artinya, elemen baru dianggap aktif kalau jaraknya sudah mencapai area ini
+      let batasAktif = detailsContainer.scrollTop + (detailsContainer.clientHeight * 0.15); 
+      
+      let items = document.querySelectorAll('.timeline-item');
+      let kandidatTerpilih = null;
+
+      // 2. Scan semua item dari atas ke bawah
+      for (let i = 0; i < items.length; i++) {
+        let item = items[i];
         
-        indexAktif = kandidatIndexAktif; // Kunci kandidat menjadi lokasi aktif
+        // offsetTop adalah jarak asli elemen dari paling atas kontainer.
+        // Selama elemen masih berada di atas "Garis Pemicu", jadikan dia kandidat.
+        // Karena loop dari atas ke bawah, yang terakhir lolos pasti yang sedang dilihat.
+        if (item.offsetTop <= batasAktif) {
+          kandidatTerpilih = item.getAttribute('data-index');
+        } else {
+          // Kalau sudah ketemu elemen yang posisinya di bawah garis pemicu,
+          // langsung HENTIKAN pencarian untuk menghemat memori (performa).
+          break; 
+        }
+      }
+
+      // Jaga-jaga jika scroll mentok di paling atas (belum ada yang menyentuh batas)
+      if (kandidatTerpilih === null && items.length > 0) {
+        kandidatTerpilih = items[0].getAttribute('data-index');
+      }
+
+      // 3. Tembak ke Peta! Jika kandidat berubah, perbarui peta.
+      if (kandidatTerpilih !== null && kandidatTerpilih !== indexAktif) {
+        indexAktif = kandidatTerpilih; 
         let indexAngka = parseInt(indexAktif);
         let targetRecord = TimelineRecords[indexAngka];
         
@@ -197,9 +199,10 @@ function renderMapAndPanel() {
           Map.panTo(targetRecord.marker.getLatLng());
         }
       }
+      
     }, 300); 
 
-  }, { passive: true }); // Mengurangi beban di HP spek rendah
+  }, { passive: true });
 
   // ==========================================
   // 6. FINALIZE UI
