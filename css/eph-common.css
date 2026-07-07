@@ -52,6 +52,12 @@ body {
   background: #822; /* Warna digabung dari file 2 */
 }
 
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
 #branding {
   user-select: none;
   -moz-user-select: none;
@@ -79,13 +85,21 @@ body {
   color: #fff;
 }
 
+/* Pembersih Float agar border item tidak tertimpa gambar */
+.timeline-item {
+  margin-bottom: 30px; 
+  padding-bottom: 20px; 
+  border-bottom: 1px solid #eee;
+  overflow: hidden; /* Clearfix ajaib */
+}
+
 /* ==========================================================================
-   3. NAVIGASI (Sistem Flexbox)
+   NAVIGASI (Sistem Flexbox)
    ========================================================================== */
 nav ul {
   display: flex;
   list-style: none;
-  margin: 0 20px;
+  margin: 0 20px 20px 20px; /* Tambahan margin bawah agar tidak menempel dasar layar */
   padding: 0;
 }
 
@@ -94,18 +108,17 @@ nav ul li {
   padding: 0;
 }
 
-nav ul li:nth-child(1) { flex: 1; text-align: left; }
-nav ul li:nth-child(2) { flex: 3; text-align: center; }
-nav ul li:nth-child(3) { flex: 1; text-align: right; }
+/* Karena Anda hanya punya 2 menu sekarang, biarkan porsinya seimbang (masing-masing flex: 1) */
+nav ul li:nth-child(1) { flex: 1; text-align: center; }
+nav ul li:nth-child(2) { flex: 1; text-align: center; }
 
 nav li a {
-  display: block; /* Mengubah inline-block menjadi block agar memenuhi seluruh area <li> */
-  width: 100%;    /* Memastikan area klik meregang penuh dari ujung ke ujung blok */
-  box-sizing: border-box; /* Menjaga ukuran tetap pas meski ada padding */
+  display: block; 
+  width: 100%;    
+  box-sizing: border-box; 
   padding: 10px 0;
   font-size: 12px;
   line-height: 12px;
-  font-family: "Open Sans", sans-serif;
   font-weight: bold;
   text-decoration: none;
   text-transform: uppercase;
@@ -120,19 +133,11 @@ nav li.active a, nav li a.active {
   color: #fff !important;
 }
 
-/* Mengunci warna tombol navigasi agar tidak kembali ke hitam bawaan browser */
 #nav-detail a, 
 #nav-detail a:not([href]) {
   color: #bf9090; 
 }
 
-/* =========================================
-
-.panel-content {
-  flex: 1;
-  overflow-y: auto;
-  background: #fff;
-}
 
 /* =========================================
    5. KONTEN LINIMASA (DETAILS)
