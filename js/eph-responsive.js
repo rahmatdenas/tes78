@@ -22,10 +22,11 @@
     return panel.offsetHeight / 2; // Terbuka tepat setengah layar
   }
   
-  function getCollapsedY() {
-    // Tertutup ke bawah, hanya menyisakan tinggi elemen header (#branding)
-    return panel.offsetHeight - (header ? header.offsetHeight : 60); 
-  }
+function getCollapsedY() {
+  // Ganti penghitungan dinamis dengan angka statis 56 (sesuai tinggi header Anda)
+  // Anda bisa menambah/mengurangi angka 56 jika masih kurang pas (misal: 60 atau 65)
+  return panel.offsetHeight - 56; 
+}
 
   function clampY(y) {
     // Kunci gerakan agar tidak bisa ditarik lebih tinggi dari 50% atau lebih rendah dari header
@@ -128,12 +129,7 @@
     panel = document.getElementById('panel');
     header = document.getElementById('branding');
     if (!panel || !header) return;
-
-    // KUNCI 2: Suntikkan Ikon Toggle (Chevron) langsung ke Header
-    toggleIcon = document.createElement('div');
-    toggleIcon.id = 'panel-toggle';
-    toggleIcon.innerHTML = '&#9660;'; // Karakter Unicode Chevron Bawah
-    header.appendChild(toggleIcon);
+toggleIcon = document.getElementById('panel-toggle');
 
     handleViewportChange();
 
