@@ -345,29 +345,19 @@ function renderMapAndPanel() {
 // MODIFIKASI FUNGSI FOKUS: MENDUKUNG AKSI TETAP ZOOM & PERGESERAN LAYAR MOBILE
 // =========================================================================
 function fokusKeMarker(latlng, keepCurrentZoom = false) {
-  let apakahMobile = window.innerWidth <= 800;
-  
-  // TERCAPAI: Jika keepCurrentZoom bernilai true (dari klik marker), gunakan zoom saat ini. Jika false, paksa ke 14.
+  // TERCAPAI: Jika dari klik marker langsung (true), gunakan zoom saat ini. Jika false, paksa ke 14.
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 14;
-  
-  let mapHeight = document.getElementById('map').clientHeight;
-  
-  // SOLUSI MOBILE: Jika mobile, area tengah visual yang bersih berada pada 25% dari atas layar (karena bawahnya tertutup panel 50%)
-  // Jika desktop, kita berikan offset tipis 5% agar tidak terlalu mentok atas.
-  let yOffset = apakahMobile ? (mapHeight * 0.25) : (mapHeight * 0.05); 
-
-  let targetPoint = Map.project(latlng, targetZoom);
-  targetPoint.y += yOffset; // Dorong target koordinat ke bawah agar marker terdorong ke atas ruang kosong
-  let targetLatLng = Map.unproject(targetPoint, targetZoom);
 
   let currentCenter = Map.getCenter();
   let currentZoom = Map.getZoom();
 
-  if (currentZoom === targetZoom && currentCenter.distanceTo(targetLatLng) < 5) {
-    return; 
+  // --- LOGIKA PENCEGAH SHAKY (Cek jika posisi & zoom sudah pas) ---
+  if (currentZoom === targetZoom && currentCenter.distanceTo(latlng) < 5) {
+    return; // Berhenti di sini, tidak perlu memicu animasi ulang yang bikin bergetar
   }
 
-  Map.flyTo(targetLatLng, targetZoom, {
+  // Langsung tembak ke koordinat asli (latlng) tanpa offset buatan
+  Map.flyTo(latlng, targetZoom, {
     animate: true,
     duration: 1.2
   });
