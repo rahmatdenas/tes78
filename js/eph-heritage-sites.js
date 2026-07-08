@@ -345,23 +345,28 @@ function renderMapAndPanel() {
 // =========================================================================
 // MODIFIKASI FUNGSI FOKUS: MENDUKUNG AKSI TETAP ZOOM & PERGESERAN LAYAR MOBILE
 // =========================================================================
-function fokusKeMarker(latlng, keepCurrentZoom = false) {
-  // TERCAPAI: Jika dari klik marker langsung (true), gunakan zoom saat ini. Jika false, paksa ke 14.
+function fokusKeMarker(latlng, keepCurrentZoom = false, tanpaAnimasi = false) {
+  // Jika dari klik marker langsung (keepCurrentZoom = true), gunakan zoom saat ini
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 14;
 
   let currentCenter = Map.getCenter();
   let currentZoom = Map.getZoom();
 
-  // --- LOGIKA PENCEGAH SHAKY (Cek jika posisi & zoom sudah pas) ---
+  // Logika pencegah getar jika posisi sudah pas
   if (currentZoom === targetZoom && currentCenter.distanceTo(latlng) < 5) {
-    return; // Berhenti di sini, tidak perlu memicu animasi ulang yang bikin bergetar
+    return; 
   }
 
-  // Langsung tembak ke koordinat asli (latlng) tanpa offset buatan
-  Map.flyTo(latlng, targetZoom, {
-    animate: true,
-    duration: 1.2
-  });
+  // JIKA DIKLIK DARI MARKER PETA (tanpaAnimasi = true), LANGSUNG PINDAH INSTAN
+  if (tanpaAnimasi) {
+    Map.setView(latlng, targetZoom, { animate: false });
+  } else {
+    // JIKA DIJALANKAN OLEH PLAY ATAU KLIK PANEL, TETAP PAKAI ANIMASI SINEMATIK
+    Map.flyTo(latlng, targetZoom, {
+      animate: true,
+      duration: 1.2
+    });
+  }
 }
 
 function formatWikidataDate(dateString, precision) {
