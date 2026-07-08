@@ -124,6 +124,43 @@ margin: 25px;
   font-family: monospace;
 }
 
+
+/* --- HANDLE TIPIS UNTUK DRAG --- */
+  #drag-handle {
+    width: 50px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    margin: 10px auto;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+  }
+
+  /* --- TOMBOL PLAY/PAUSE BARU --- */
+  #play-btn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 28px; /* Ukuran ikon */
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.2s;
+  }
+
+#play-btn:active {
+    transform: translateY(-50%) scale(0.8); /* Efek memantul saat diklik */
+  }
+
+
 /* ==========================================================================
    POPUP PETA LEAFLET (Injeksi JS)
    ========================================================================== */
