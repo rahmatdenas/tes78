@@ -338,16 +338,19 @@ let playBtn = document.getElementById('play-btn');
   }
 }
 
+// =========================================================================
+// FUNGSI FOKUS: GERAKAN LANGSUNG 1 LANGKAH (ANTI MEMBAL DUA KALI DI HP)
+// =========================================================================
 function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
   // Jika dari klik marker langsung (true), gunakan zoom saat ini. Jika false, paksa ke 14.
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 14;
   
   let koordinatAkhir = latlng;
 
-  // JIKA MOBILE: Geser kamera ke bawah 40px agar posisi marker naik ke atas
+  // KHUSUS MOBILE (Layar <= 800px): Langsung geser target koordinat 20px ke atas
   if (window.innerWidth <= 800) {
     let targetPoint = Map.project(latlng, targetZoom);
-    targetPoint.y += 40; 
+    targetPoint.y += 20; // Menambah Y piksel akan menggeser pusat peta ke bawah (marker naik 20px)
     koordinatAkhir = Map.unproject(targetPoint, targetZoom);
   }
 
@@ -360,16 +363,16 @@ function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
   }
 
   // --------------------------------========================================
-  // KUNCI PERBAIKAN: JIKA ZOOM SAMA, LUNCURKAN SECARA LURUS (ANTI MEMBAL 2X)
+  // SOLUSI MUTLAK: JIKA ZOOM SAMA, GUNAKAN SETVIEW ANIMATE (MELUNCUR LANGSUNG)
   // --------------------------------========================================
   if (currentZoom === targetZoom) {
-    // panTo akan menggeser peta dalam 1 gerakan lurus langsung ke target kustom 40px
-    Map.panTo(koordinatAkhir, {
+    // setView dengan opsi animate akan menyeret peta secara langsung & lurus tanpa efek membal
+    Map.setView(koordinatAkhir, targetZoom, {
       animate: true,
       duration: durasi
     });
   } else {
-    // Jika tingkat zoom berbeda, tetap gunakan flyTo agar efek terbangnya bekerja sinematik
+    // Jika tingkat zoom berbeda (misal dari jauh), tetap pakai flyTo agar efek terbangnya bekerja
     Map.flyTo(koordinatAkhir, targetZoom, {
       animate: true,
       duration: durasi
