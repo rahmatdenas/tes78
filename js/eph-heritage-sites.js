@@ -51,7 +51,7 @@ function renderMapAndPanel() {
   function hentikanPlay() {
     if (!isPlaying) return;
     isPlaying = false;
-    clearInterval(pla  yInterval);
+    clearInterval(playInterval);
     if (playBtn) playBtn.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
   }
 
