@@ -152,11 +152,12 @@ if (detailsContainer) {
     }
 
     // 2. SUNTIKKAN TOMBOL PLAY MENGGANTIKAN PANEL TOGGLE (CHEVRON)
-    var playBtn = document.getElementById('play-btn');
+var playBtn = document.getElementById('play-btn');
     if (!playBtn) {
       playBtn = document.createElement('button');
       playBtn.id = 'play-btn';
-      playBtn.innerHTML = '▶'; // Ikon Play bawaan
+      // Ikon Play diganti menggunakan SVG murni
+      playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; 
       header.appendChild(playBtn);
     }
     
