@@ -32,7 +32,7 @@ function getCollapsedY() {
     // kita paksa panelnya "naik" sedikit agar headernya muncul semua.
     // Jika masih tenggelam, NAIKKAN angkanya (misal: 25, 30, atau 40).
     // Jika terlalu tinggi, TURUNKAN angkanya (misal: 10 atau 0).
-    var angkaKoreksi = 54; 
+    var angkaKoreksi = 55; 
 
     // 3. Kurangi tinggi total panel dengan tinggi header, lalu kurangi lagi dengan angka koreksi
     return tinggiPanel - tinggiHeader - angkaKoreksi; 
