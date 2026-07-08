@@ -10,7 +10,10 @@ function init() {
 
 // Inisialisasi Peta Leaflet (Tanpa Cluster)
 function initMap() {
-  Map = new L.map('map').setView([-0.789, 113.921], 5); // Default view (Indonesia)
+  // TAMBAHAN: Masukkan opsi { minZoom: 2 } di sini
+  Map = new L.map('map', { 
+    minZoom: 2 
+  }).setView([-0.789, 113.921], 5); // Default view (Indonesia)
 
   let cartoLayer = new L.tileLayer(CARTO_LAYER_URL, {
     attribution : CARTO_LAYER_ATTRIBUTION,
