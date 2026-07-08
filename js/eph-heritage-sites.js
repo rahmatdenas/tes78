@@ -217,18 +217,22 @@ fokusKeMarker(marker.getLatLng());
 function fokusKeMarker(latlng) {
   let targetZoom = 14;
   let mapHeight = document.getElementById('map').clientHeight;
-  
-  // Kita geser titik pusat kamera sebesar 25% dari tinggi peta.
-  // Jika popup atau gambar di dalamnya cukup tinggi dan masih sedikit tertutup, 
-  // angka 0.25 ini bisa Anda naikkan menjadi 0.30 atau 0.35.
   let yOffset = mapHeight * 0.05; 
 
   let targetPoint = Map.project(latlng, targetZoom);
-  
-  // REVISI PENTING: Gunakan tanda PLUS (+), bukan minus (-)
-  targetPoint.y += yOffset; 
-  
+  targetPoint.y += yOffset;
   let targetLatLng = Map.unproject(targetPoint, targetZoom);
+
+  // --- LOGIKA PENCEGAH SHAKY ---
+  let currentCenter = Map.getCenter();
+  let currentZoom = Map.getZoom();
+
+  // Cek jarak antara titik tengah peta saat ini dengan target (dalam hitungan meter).
+  // Jika zoom sudah pas dan jaraknya kurang dari 5 meter (hanya selisih desimal), batalkan animasi.
+  if (currentZoom === targetZoom && currentCenter.distanceTo(targetLatLng) < 5) {
+    return; // Berhenti di sini, animasi flyTo tidak dieksekusi
+  }
+  // -----------------------------
 
   Map.flyTo(targetLatLng, targetZoom, {
     animate: true,
