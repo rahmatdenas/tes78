@@ -220,11 +220,11 @@ function renderMapAndPanel() {
       marker.bindPopup(popupContent, { autoPan: false, minWidth: 160, maxWidth: 160 });
       
   // Event saat Marker di Klik Direct
-      marker.on('click', function() {
+ marker.on('click', function() {
         hentikanPlay(); 
 
-        // SEKARANG: Parameter kedua = true (tetap zoom), Parameter ketiga = true (tanpa animasi)
-        fokusKeMarker(marker.getLatLng(), true, true); 
+        // SEKARANG: Parameter ke-2 = true (tetap zoom), Parameter ke-3 = 0.3 (durasi super cepat)
+        fokusKeMarker(marker.getLatLng(), true, 0.3); 
         
         let indexStr = index.toString();
         indexAktif = indexStr; 
@@ -345,37 +345,32 @@ function renderMapAndPanel() {
 // =========================================================================
 // MODIFIKASI FUNGSI FOKUS: MENDUKUNG AKSI TETAP ZOOM & PERGESERAN LAYAR MOBILE
 // =========================================================================
-function fokusKeMarker(latlng, keepCurrentZoom = false, tanpaAnimasi = false) {
-  // TERCAPAI: Jika dari klik marker langsung (true), gunakan zoom saat ini. Jika false, paksa ke 14.
+function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
+  // Jika dari klik marker langsung (true), gunakan zoom saat ini. Jika false, paksa ke 14.
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 14;
   
-  // Siapkan variabel penampung koordinat akhir
   let koordinatAkhir = latlng;
 
-  // JIKA MOBILE (Layar <= 800px): Geser kamera ke bawah 40px agar posisi marker naik ke atas
+  // JIKA MOBILE: Geser kamera ke bawah 40px agar posisi marker naik ke atas
   if (window.innerWidth <= 800) {
     let targetPoint = Map.project(latlng, targetZoom);
-    targetPoint.y += 40; // Menambah Y piksel akan menggeser pusat peta ke bawah (marker naik ke atas)
+    targetPoint.y += 40; 
     koordinatAkhir = Map.unproject(targetPoint, targetZoom);
   }
 
   let currentCenter = Map.getCenter();
   let currentZoom = Map.getZoom();
 
-  // --- LOGIKA PENCEGAH SHAKY ---
+  // Logika pencegah shaky / getar jika posisi sudah pas
   if (currentZoom === targetZoom && currentCenter.distanceTo(koordinatAkhir) < 5) {
     return; 
   }
 
-  // Eksekusi perpindahan kamera ke koordinat akhir yang sudah disesuaikan
-  if (tanpaAnimasi) {
-    Map.setView(koordinatAkhir, targetZoom, { animate: false });
-  } else {
-    Map.flyTo(koordinatAkhir, targetZoom, {
-      animate: true,
-      duration: 1.2
-    });
-  }
+  // Selalu gunakan flyTo agar ada animasi meluncur, durasinya diambil dari parameter
+  Map.flyTo(koordinatAkhir, targetZoom, {
+    animate: true,
+    duration: durasi
+  });
 }
 
 function formatWikidataDate(dateString, precision) {
