@@ -347,10 +347,10 @@ function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
   
   let koordinatAkhir = latlng;
 
-  // KHUSUS MOBILE (Layar <= 800px): Geser target koordinat 20px ke atas
+  // KHUSUS MOBILE (Layar <= 800px): Geser target koordinat 40px ke atas
   if (window.innerWidth <= 800) {
     let targetPoint = Map.project(latlng, targetZoom);
-    targetPoint.y += 20; // Menambah Y piksel akan menggeser pusat peta ke bawah (marker naik 20px)
+    targetPoint.y += 40; // Menambah Y piksel akan menggeser pusat peta ke bawah (marker naik 40px)
     koordinatAkhir = Map.unproject(targetPoint, targetZoom);
   }
 
