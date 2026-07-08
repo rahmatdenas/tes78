@@ -6,25 +6,18 @@
 let isPlaying = false;
 let playInterval = null;
 let bgAudio = null;
-let jedaAutoScroll = null;
 
 function hentikanPlay() {
   isPlaying = false; 
-  
   if (playInterval !== null) {
     clearInterval(playInterval);
     playInterval = null;
   }
-
-  if (jedaAutoScroll !== null) {
-    clearTimeout(jedaAutoScroll);
-    jedaAutoScroll = null;
-  }
-
   if (bgAudio) {
     bgAudio.pause();
   }
-
+  
+  // Buka kunci secara instan saat distop
   let detailsContainer = document.getElementById('details');
   if (detailsContainer) {
     detailsContainer.classList.remove('sedang-auto-scroll');
@@ -36,14 +29,9 @@ function hentikanPlay() {
   }
 }
 
-// -------------------------------------------------------------------------
-// FUNGSI BARU: MENGHITUNG PADDING AREA PETA SECARA DINAMIS (DESKTOP VS MOBILE)
-// -------------------------------------------------------------------------
 function dapatkanOpsiBounds(denganDurasi = false) {
   let apakahMobile = window.innerWidth <= 800;
-  
   if (apakahMobile) {
-    // Jika mobile, beri padding bawah sebesar setengah layar ponsel + 40px spasi aman
     let opsi = {
       paddingTopLeft: [40, 40],
       paddingBottomRight: [40, (window.innerHeight / 2) + 40]
@@ -51,7 +39,6 @@ function dapatkanOpsiBounds(denganDurasi = false) {
     if (denganDurasi) opsi.duration = 1.5;
     return opsi;
   } else {
-    // Jika desktop, gunakan padding standar rata di semua sisi
     let opsi = { padding: [40, 40] };
     if (denganDurasi) opsi.duration = 1.5;
     return opsi;
@@ -114,6 +101,20 @@ function renderMapAndPanel() {
     document.body.appendChild(bgAudio);
   }
 
+  // --------------------------------========================================
+  // SENJATA UTAMA: FUNGSI SCROLL PROGRAMER (MEMBENTENG SEPENUHNYA DARI KAWAT)
+  // --------------------------------========================================
+  function gulirkanPanelLewatKode(posisiTarget) {
+    // Jalankan toleransi: Jika posisi scroll saat ini sudah sama dengan target, jangan kunci!
+    if (Math.abs(detailsContainer.scrollTop - posisiTarget) < 4) {
+      detailsContainer.classList.remove('sedang-auto-scroll');
+      return;
+    }
+    // Kunci kawat jebakan secara total
+    detailsContainer.classList.add('sedang-auto-scroll');
+    detailsContainer.scrollTo({ top: posisiTarget, behavior: 'smooth' });
+  }
+
   function jalankanAnimasiSatuLangkah() {
     let curIdx = parseInt(indexAktif === '-1' ? '-1' : indexAktif);
     let nextIdx = curIdx + 1;
@@ -122,37 +123,25 @@ function renderMapAndPanel() {
       hentikanPlay();
       indexAktif = '-1'; 
       Map.closePopup(); 
-      
       if (markerBounds.length > 0) {
-        // Menggunakan opsi padding dinamis khusus mobile ketika animasi selesai
         Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true)); 
       }
-      
-      detailsContainer.classList.add('sedang-auto-scroll');
-      jedaAutoScroll = setTimeout(() => {
-        detailsContainer.classList.remove('sedang-auto-scroll');
-      }, 1200); 
-      detailsContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      gulirkanPanelLewatKode(0);
       return; 
     }    
     
     let targetRecord = TimelineRecords[nextIdx];
     if (targetRecord && targetRecord.marker) {
       targetRecord.marker.openPopup();
-      fokusKeMarker(targetRecord.marker.getLatLng(), false); // False = Jalankan paksa zoom otomatis 14
+      fokusKeMarker(targetRecord.marker.getLatLng(), false); 
 
       indexAktif = nextIdx.toString();
-
-      detailsContainer.classList.add('sedang-auto-scroll');
-      jedaAutoScroll = setTimeout(() => {
-        detailsContainer.classList.remove('sedang-auto-scroll');
-      }, 2200); 
       
       let targetItem = document.getElementById(`item-${nextIdx}`);
       if (targetItem) {
         let scrollPos = targetItem.offsetTop - detailsContainer.offsetTop; 
         if (scrollPos < 0) scrollPos = 0;
-        detailsContainer.scrollTo({ top: scrollPos, behavior: 'smooth' });
+        gulirkanPanelLewatKode(scrollPos);
       }
     }
   }
@@ -182,9 +171,7 @@ function renderMapAndPanel() {
     });
   }
 
-  // ==========================================
-  // RAKIT KONTEN HTML PANEL
-  // ==========================================
+  // Rakit HTML Panel
   TimelineRecords.forEach((record, index) => {
     allHtml += `
       <div class="timeline-item" id="item-${index}" data-index="${index}">
@@ -197,12 +184,9 @@ function renderMapAndPanel() {
       </div>
     `;
   });
-
   detailsContainer.innerHTML = allHtml;
 
-  // ==========================================
-  // RENDER MARKER & INTERAKSI KLIK MARKER DIRECT
-  // ==========================================
+  // Interaksi Klik Marker Direct di Peta
   TimelineRecords.forEach((record, index) => {
     if (record.lat && record.lon) {
       let marker = L.marker([record.lat, record.lon]).addTo(Map);
@@ -216,37 +200,26 @@ function renderMapAndPanel() {
           <span class="popup-date">${record.formattedDate}</span>
         </div>
       `;
-      
       marker.bindPopup(popupContent, { autoPan: false, minWidth: 160, maxWidth: 160 });
       
-  // Event saat Marker di Klik Direct
- marker.on('click', function() {
+      marker.on('click', function() {
         hentikanPlay(); 
-
-        // SEKARANG: Parameter ke-2 = true (tetap zoom), Parameter ke-3 = 0.3 (durasi super cepat)
         fokusKeMarker(marker.getLatLng(), true, 0.3); 
         
         let indexStr = index.toString();
         indexAktif = indexStr; 
 
-        detailsContainer.classList.add('sedang-auto-scroll');
-        jedaAutoScroll = setTimeout(() => {
-          detailsContainer.classList.remove('sedang-auto-scroll');
-        }, 1200); 
-
         let targetItem = document.getElementById(`item-${index}`);
-        setTimeout(function() {
+        if (targetItem) {
           let scrollPos = targetItem.offsetTop - detailsContainer.offsetTop; 
           if (scrollPos < 0) scrollPos = 0;
-          detailsContainer.scrollTo({ top: scrollPos, behavior: 'smooth' });
-        }, 300);
+          gulirkanPanelLewatKode(scrollPos);
+        }
       });
     }
   });
 
-  // ==========================================
-  // FITUR: KLIK H2 PANEL
-  // ==========================================
+  // Interaksi Klik Tulisan H2 di Panel Linimasa
   detailsContainer.addEventListener('click', function(e) {
     if (e.target && e.target.classList.contains('timeline-date')) {
       let parentDiv = e.target.closest('.timeline-item');
@@ -257,60 +230,62 @@ function renderMapAndPanel() {
         indexAktif = '-1';
         Map.closePopup();
         if (markerBounds.length > 0) {
-          // Menggunakan opsi padding dinamis khusus mobile ketika teks pengantar diklik manual
           Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true));
         }
-        detailsContainer.classList.add('sedang-auto-scroll');
-        jedaAutoScroll = setTimeout(() => {
-          detailsContainer.classList.remove('sedang-auto-scroll');
-        }, 1200); 
-        detailsContainer.scrollTo({ top: 0, behavior: 'smooth' });
+        gulirkanPanelLewatKode(0);
       } else {
         let index = parseInt(indexStr);
         let targetRecord = TimelineRecords[index];
         if (targetRecord && targetRecord.marker) {
           targetRecord.marker.openPopup();
-          fokusKeMarker(targetRecord.marker.getLatLng(), false); // False = Tetap zoom in otomatis ke 14
+          fokusKeMarker(targetRecord.marker.getLatLng(), false); 
           indexAktif = indexStr; 
-
-          detailsContainer.classList.add('sedang-auto-scroll');
-          jedaAutoScroll = setTimeout(() => {
-            detailsContainer.classList.remove('sedang-auto-scroll');
-          }, 1200); 
 
           let scrollPos = parentDiv.offsetTop - detailsContainer.offsetTop; 
           if (scrollPos < 0) scrollPos = 0;
-          detailsContainer.scrollTo({ top: scrollPos, behavior: 'smooth' });
+          gulirkanPanelLewatKode(scrollPos);
         }
       }
     }
   });
 
-  // ==========================================
-  // SCROLLTELLING PANEL
-  // ==========================================
+  // --------------------------------========================================
+  // DETEKTOR UTAMA: MENYALAKAN KEMBALI KAWAT TEPAT SAAT SMOOTH SCROLL SELESAI
+  // --------------------------------========================================
+  detailsContainer.addEventListener('scrollend', () => {
+    detailsContainer.classList.remove('sedang-auto-scroll');
+  });
+
+  // KAWAT JEBAKAN SCROLLTELLING (Hanya merespons scroll murni jari tangan user)
   detailsContainer.addEventListener('scroll', () => {
+    // JIKA SCROLL DIPICU OLEH MARKER, KODE DI BAWAH INI AKAN DIABAIKAN TOTAL!
     if (detailsContainer.classList.contains('sedang-auto-scroll')) return;
+    
     hentikanPlay(); 
     clearTimeout(jedaScroll);
     
     jedaScroll = setTimeout(() => {
-      let batasAktif = detailsContainer.scrollTop + (detailsContainer.clientHeight * 0.15); 
       let items = document.querySelectorAll('.timeline-item');
       let kandidatTerpilih = null;
 
-      for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        let posisiAsliItem = item.offsetTop - detailsContainer.offsetTop;
-        if (posisiAsliItem <= batasAktif) {
-          kandidatTerpilih = item.getAttribute('data-index');
-        } else {
-          break; 
-        }
-      }
+      let isAtBottom = detailsContainer.scrollTop + detailsContainer.clientHeight >= detailsContainer.scrollHeight - 15;
+      let isAtTop = detailsContainer.scrollTop <= 5;
 
-      if (kandidatTerpilih === null && items.length > 0) {
-        kandidatTerpilih = items[0].getAttribute('data-index');
+      if (isAtTop) {
+        kandidatTerpilih = '-1';
+      } else if (isAtBottom && items.length > 0) {
+        kandidatTerpilih = items[items.length - 1].getAttribute('data-index');
+      } else {
+        let batasAktif = detailsContainer.scrollTop + (detailsContainer.clientHeight * 0.15); 
+        for (let i = 0; i < items.length; i++) {
+          let item = items[i];
+          let posisiAsliItem = item.offsetTop - detailsContainer.offsetTop;
+          if (posisiAsliItem <= batasAktif) {
+            kandidatTerpilih = item.getAttribute('data-index');
+          } else {
+            break; 
+          }
+        }
       }
 
       if (kandidatTerpilih !== null && kandidatTerpilih !== indexAktif) {
@@ -318,7 +293,6 @@ function renderMapAndPanel() {
         if (indexAktif === '-1') {
           Map.closePopup();
           if (markerBounds.length > 0) {
-            // Menggunakan opsi padding dinamis khusus mobile ketika discroll manual ke atas
             Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true));
           }
         } else {
@@ -326,7 +300,7 @@ function renderMapAndPanel() {
           let targetRecord = TimelineRecords[indexAngka];
           if (targetRecord && targetRecord.marker && !targetRecord.marker.isPopupOpen()) {
             targetRecord.marker.openPopup();
-            fokusKeMarker(targetRecord.marker.getLatLng(), false); // False = Tetap zoom in otomatis ke 14
+            fokusKeMarker(targetRecord.marker.getLatLng(), false); 
           }
         }
       }
@@ -337,21 +311,14 @@ function renderMapAndPanel() {
   detailsContainer.style.display = 'block';
 
   if (markerBounds.length > 0) {
-    // Menggunakan opsi padding dinamis khusus mobile saat pertama kali aplikasi dibuka bersih
     Map.fitBounds(markerBounds, dapatkanOpsiBounds(false));
   }
 }
 
-// =========================================================================
-// MODIFIKASI FUNGSI FOKUS: MENDUKUNG AKSI TETAP ZOOM & PERGESERAN LAYAR MOBILE
-// =========================================================================
 function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
-  // Jika dari klik marker langsung (true), gunakan zoom saat ini. Jika false, paksa ke 14.
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 14;
-  
   let koordinatAkhir = latlng;
 
-  // JIKA MOBILE: Geser kamera ke bawah 40px agar posisi marker naik ke atas
   if (window.innerWidth <= 800) {
     let targetPoint = Map.project(latlng, targetZoom);
     targetPoint.y += 40; 
@@ -361,12 +328,10 @@ function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
   let currentCenter = Map.getCenter();
   let currentZoom = Map.getZoom();
 
-  // Logika pencegah shaky / getar jika posisi sudah pas
   if (currentZoom === targetZoom && currentCenter.distanceTo(koordinatAkhir) < 5) {
     return; 
   }
 
-  // Selalu gunakan flyTo agar ada animasi meluncur, durasinya diambil dari parameter
   Map.flyTo(koordinatAkhir, targetZoom, {
     animate: true,
     duration: durasi
