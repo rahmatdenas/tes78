@@ -48,10 +48,23 @@ function renderMapAndPanel() {
   let playInterval = null;
   let playBtn = document.getElementById('play-btn');
 
-  function hentikanPlay() {
+  // --- [TAMBAHAN BARU] BIKIN PEMUTAR MUSIK ---
+  let bgAudio = document.getElementById('bg-musik');
+  if (!bgAudio) {
+    bgAudio = document.createElement('audio');
+    bgAudio.id = 'bg-musik';
+    bgAudio.src = 'lagu-sejarah.mp3'; // <--- UBAH NAMA INI SESUAI FILE MP3 MILIKMU
+    bgAudio.loop = true; // <--- Agar lagu diputar berulang-ulang
+    document.body.appendChild(bgAudio);
+  }
+
+function hentikanPlay() {
     if (!isPlaying) return;
     isPlaying = false;
     clearInterval(playInterval);
+    if (bgAudio) {
+      bgAudio.pause();
+    }
     if (playBtn) playBtn.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
   }
 
@@ -75,10 +88,10 @@ function renderMapAndPanel() {
 
       detailsContainer.classList.add('sedang-auto-scroll');
       clearTimeout(jedaAutoScroll);
-      jedaAutoScroll = setTimeout(() => {
+jedaAutoScroll = setTimeout(() => {
         detailsContainer.classList.remove('sedang-auto-scroll');
-      }, 1200); 
-
+      }, 2200); 
+      
       let targetItem = document.getElementById(`item-${nextIdx}`);
       if (targetItem) {
         let scrollPos = targetItem.offsetTop - detailsContainer.offsetTop; 
@@ -88,7 +101,7 @@ function renderMapAndPanel() {
     }
   }
 
-  // Aktifkan event pada tombol Play
+// Aktifkan event pada tombol Play
   if (playBtn) {
     // Hapus event lama jika fungsi ini dipanggil ulang
     let newPlayBtn = playBtn.cloneNode(true);
@@ -102,6 +115,14 @@ function renderMapAndPanel() {
       } else {
         isPlaying = true;
         playBtn.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+        
+        // --- [TAMBAHAN BARU] PUTAR LAGU ---
+        if (bgAudio) {
+          bgAudio.play().catch(function(error) {
+            console.log("Browser menahan pemutaran otomatis lagu: ", error); 
+          });
+        }
+
         jalankanAnimasiSatuLangkah(); // Jalan 1x langsung tanpa jeda awal
         playInterval = setInterval(jalankanAnimasiSatuLangkah, 3000); // Jalan tiap 3 detik
       }
@@ -228,7 +249,7 @@ function renderMapAndPanel() {
     
     clearTimeout(jedaScroll);
     
-    jedaScroll = setTimeout(() => {
+  jedaScroll = setTimeout(() => {
       let batasAktif = detailsContainer.scrollTop + (detailsContainer.clientHeight * 0.15); 
       
       let items = document.querySelectorAll('.timeline-item');
@@ -236,7 +257,11 @@ function renderMapAndPanel() {
 
       for (let i = 0; i < items.length; i++) {
         let item = items[i];
-        if (item.offsetTop <= batasAktif) {
+        
+        // [PERBAIKAN KUNCI]: Samakan cara hitung offset dengan fungsi saat di-klik
+        let posisiAsliItem = item.offsetTop - detailsContainer.offsetTop;
+
+        if (posisiAsliItem <= batasAktif) {
           kandidatTerpilih = item.getAttribute('data-index');
         } else {
           break; 
@@ -257,7 +282,7 @@ function renderMapAndPanel() {
           fokusKeMarker(targetRecord.marker.getLatLng());
         }
       }
-    }, 300); 
+    }, 300);
 
   }, { passive: true });
 
