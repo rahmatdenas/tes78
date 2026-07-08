@@ -347,7 +347,7 @@ function renderMapAndPanel() {
 // KUNCI PENGATURAN ZOOM MARKER ADA DI SINI
 // ==========================================
 function fokusKeMarker(latlng) {
-  let targetZoom = 14; // <--- UBAH ANGKA INI UNTUK MENGATUR BATAS ZOOM IN KAMERA KETIKA FOKUS
+  let targetZoom = 12; // <--- UBAH ANGKA INI UNTUK MENGATUR BATAS ZOOM IN KAMERA KETIKA FOKUS
   let mapHeight = document.getElementById('map').clientHeight;
   let yOffset = mapHeight * 0.05; 
 
