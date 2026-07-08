@@ -189,6 +189,7 @@ margin: 25px;
   display: none; /* Akan diubah JS menjadi block setelah loading */
   padding: 0px 20px 20px 20px;
   font-family: Merriweather, serif;
+   position: relative;
 }
 
 /* Base style untuk elemen yang di-generate JS */
