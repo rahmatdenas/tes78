@@ -285,8 +285,9 @@ let scrollPos = parentDiv.offsetTop;
   // Sangat cocok untuk elemen div Anda yang pendek (~70px)
 let observerOptions = {
   root: detailsContainer,
-  // Pangkas 20px dari atas, dan pangkas 75% dari bawah
-  rootMargin: '-20px 0px -75% 0px', 
+  // Atas 0px (menempel langsung di langit-langit kontainer)
+  // Bawah -90% (memblokir 90% area bawah, menyisakan 10% di atas)
+  rootMargin: '0px 0px -90% 0px', 
   threshold: 0 
 };
 
