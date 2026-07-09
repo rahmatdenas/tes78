@@ -218,9 +218,11 @@ let playBtn = document.getElementById('play-btn');
       `;
       marker.bindPopup(popupContent, { autoPan: false, minWidth: 160, maxWidth: 160 });
       
-  marker.on('click', function() {
+marker.on('click', function() {
         hentikanPlay(); 
-        fokusKeMarker(marker.getLatLng(), true, 0.3); 
+        
+        // UTAMA: Tambahkan 'true' di parameter ke-4 untuk mematikan animasi fly
+        fokusKeMarker(marker.getLatLng(), true, 0.3, true); 
         
         let indexStr = index.toString();
         indexAktif = indexStr; 
@@ -233,7 +235,6 @@ let playBtn = document.getElementById('play-btn');
           let scrollPos = targetItem.offsetTop; 
           if (scrollPos < 0) scrollPos = 0;
           
-          // LANGSUNG GULIRKAN TANPA SETTIMEOUT 300ms LAGI
           detailsContainer.scrollTo({ top: scrollPos, behavior: 'smooth' });
         }
       });
@@ -378,27 +379,35 @@ let scrollPos = parentDiv.offsetTop;
 // =========================================================================
 // FUNGSI FOKUS: GERAKAN LANGSUNG 1 LANGKAH (ANTI MEMBAL DUA KALI DI HP)
 // =========================================================================
-function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2) {
+function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2, gunakanPanTo = false) {
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 12;
   let koordinatAkhir = latlng;
 
+  // Aturan ini tetap berjalan baik di desktop maupun mobile
+  // Khusus mobile, koordinat digeser sedikit agar tidak tertutup panel
   if (window.innerWidth <= 800) {
     let targetPoint = Map.project(latlng, targetZoom);
     targetPoint.y += 40; 
     koordinatAkhir = Map.unproject(targetPoint, targetZoom);
   }
 
-  let currentCenter = Map.getCenter();
-  let currentZoom = Map.getZoom();
+  // JIKA DIKLIK DARI MARKER PETA (MENGGUNAKAN PANTO)
+  if (gunakanPanTo) {
+    Map.panTo(koordinatAkhir, { animate: true });
+  } else {
+    // JIKA DIPICU OLEH AUTOPLAY ATAU SCROLL PANEL (MENGGUNAKAN FLYTO)
+    let currentCenter = Map.getCenter();
+    let currentZoom = Map.getZoom();
 
-  if (currentZoom === targetZoom && currentCenter.distanceTo(koordinatAkhir) < 5) {
-    return; 
+    if (currentZoom === targetZoom && currentCenter.distanceTo(koordinatAkhir) < 5) {
+      return; 
+    }
+
+    Map.flyTo(koordinatAkhir, targetZoom, {
+      animate: true,
+      duration: durasi
+    });
   }
-
-  Map.flyTo(koordinatAkhir, targetZoom, {
-    animate: true,
-    duration: durasi
-  });
 }
 
 function formatWikidataDate(dateString, precision) {
