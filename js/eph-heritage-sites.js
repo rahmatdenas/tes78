@@ -1,11 +1,13 @@
 'use strict';
 
 // ==========================================
-// VARIABEL GLOBAL UNTUK AUTOPLAY
+// VARIABEL GLOBAL UNTUK AUTOPLAY & RUTE
 // ==========================================
 let isPlaying = false;
 let playInterval = null;
 let bgAudio = null;
+let garisRuteAktif = null;    // Menyimpan objek garis rute dinamis
+let koordinatTerakhir = null;  // Menyimpan jejak koordinat sebelum berpindah
 
 function hentikanPlay() {
   isPlaying = false; 
@@ -94,6 +96,24 @@ function renderMapAndPanel() {
     document.body.appendChild(bgAudio);
   }
 
+  // --------------------------------========================================
+  // INJEKSI CSS ANIMASI GARIS (MARCHING ANTS)
+  // --------------------------------========================================
+  if (!document.getElementById('style-rute-mengalir')) {
+    let style = document.createElement('style');
+    style.id = 'style-rute-mengalir';
+    style.innerHTML = `
+      @keyframes berjalan {
+        to { stroke-dashoffset: -20; }
+      }
+      .rute-animasi {
+        stroke-dasharray: 10, 10;
+        animation: berjalan 1.2s linear infinite;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // PENGAMAN UX: Hentikan autoplay jika pengguna melakukan scroll/touch manual
   detailsContainer.addEventListener('touchstart', () => {
     if (isPlaying) hentikanPlay();
@@ -120,6 +140,11 @@ function renderMapAndPanel() {
       hentikanPlay();
       indexAktif = '-1'; 
       Map.closePopup(); 
+      
+      // Bersihkan rute saat kembali ke pengantar awal
+      if (garisRuteAktif) { Map.removeLayer(garisRuteAktif); garisRuteAktif = null; }
+      koordinatTerakhir = null;
+
       if (markerBounds.length > 0) {
         Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true)); 
       }
@@ -170,6 +195,10 @@ function renderMapAndPanel() {
         if (apakahDiUjung) {
           indexAktif = '-1'; 
           Map.closePopup(); 
+          
+          if (garisRuteAktif) { Map.removeLayer(garisRuteAktif); garisRuteAktif = null; }
+          koordinatTerakhir = null;
+
           if (markerBounds.length > 0) {
             Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true)); 
           }
@@ -232,21 +261,6 @@ function renderMapAndPanel() {
     }
   });
 
-  // FITUR BARU: Rute Garis Jejak Perjalanan Kronologis
-  let rutePerjalanan = TimelineRecords
-    .filter(record => record.lat && record.lon)
-    .map(record => [record.lat, record.lon]);
-
-  if (rutePerjalanan.length > 1) {
-    L.polyline(rutePerjalanan, {
-      color: '#822',
-      weight: 3,
-      dashArray: '6, 8',
-      opacity: 0.65,
-      interactive: false
-    }).addTo(Map);
-  }
-
   detailsContainer.addEventListener('click', function(e) {
     if (e.target && e.target.classList.contains('timeline-date')) {
       let parentDiv = e.target.closest('.timeline-item');
@@ -256,6 +270,10 @@ function renderMapAndPanel() {
       if (indexStr === '-1') {
         indexAktif = '-1';
         Map.closePopup();
+        
+        if (garisRuteAktif) { Map.removeLayer(garisRuteAktif); garisRuteAktif = null; }
+        koordinatTerakhir = null;
+
         if (markerBounds.length > 0) {
           Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true));
         }
@@ -327,6 +345,10 @@ function renderMapAndPanel() {
 
       if (indexAktif === '-1') {
         Map.closePopup();
+        
+        if (garisRuteAktif) { Map.removeLayer(garisRuteAktif); garisRuteAktif = null; }
+        koordinatTerakhir = null;
+
         if (markerBounds.length > 0) {
           Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true));
         }
@@ -354,25 +376,45 @@ function renderMapAndPanel() {
 }
 
 // =========================================================================
-// FUNGSI FOKUS: GERAKAN LANGSUNG 1 LANGKAH (ANTI MEMBAL DUA KALI DI HP)
+// FUNGSI FOKUS: SEKARANG OTOMATIS MENGGAMBAR GARIS MENGALIR PAS TRANSISI
 // =========================================================================
 function fokusKeMarker(latlng, keepCurrentZoom = false, durasi = 1.2, gunakanPanTo = false) {
   let targetZoom = keepCurrentZoom ? Map.getZoom() : 12;
   let koordinatAkhir = latlng;
 
-  // Aturan ini tetap berjalan baik di desktop maupun mobile
-  // Khusus mobile, koordinat digeser sedikit agar tidak tertutup panel
   if (window.innerWidth <= 800) {
     let targetPoint = Map.project(latlng, targetZoom);
     targetPoint.y += 40; 
     koordinatAkhir = Map.unproject(targetPoint, targetZoom);
   }
 
-  // JIKA DIKLIK DARI MARKER PETA (MENGGUNAKAN PANTO)
+  // --------------------------------========================================
+  // LOGIKA UTAMA GARIS ROUTING DINAMIS & ANIMATIF
+  // --------------------------------========================================
+  // 1. Hapus rute garis lama saat terjadi perpindahan baru
+  if (garisRuteAktif) {
+    Map.removeLayer(garisRuteAktif);
+    garisRuteAktif = null;
+  }
+
+  // 2. Gambar garis dari titik lokasi lama ke titik lokasi baru jika datanya ada
+  if (koordinatTerakhir && (koordinatTerakhir.lat !== latlng.lat || koordinatTerakhir.lng !== latlng.lng)) {
+    garisRuteAktif = L.polyline([koordinatTerakhir, latlng], {
+      color: '#822',
+      weight: 4,
+      className: 'rute-animasi', // Mengaktifkan efek gerak mengalir CSS
+      opacity: 0.85,
+      interactive: false
+    }).addTo(Map);
+  }
+
+  // 3. Simpan posisi sekarang untuk menjadi acuan start di perpindahan berikutnya
+  koordinatTerakhir = latlng;
+
+  // Eksekusi pergeseran kamera peta
   if (gunakanPanTo) {
     Map.panTo(koordinatAkhir, { animate: true });
   } else {
-    // JIKA DIPICU OLEH AUTOPLAY ATAU SCROLL PANEL (MENGGUNAKAN FLYTO)
     let currentCenter = Map.getCenter();
     let currentZoom = Map.getZoom();
 
