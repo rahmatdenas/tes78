@@ -283,48 +283,83 @@ let scrollPos = parentDiv.offsetTop;
   
   // Konfigurasi zona deteksi (menyisakan area aktif 20% di tengah layar)
   // Sangat cocok untuk elemen div Anda yang pendek (~70px)
-let observerOptions = {
-  root: detailsContainer,
-  // Atas 0px (menempel langsung di langit-langit kontainer)
-  // Bawah -90% (memblokir 90% area bawah, menyisakan 10% di atas)
-  rootMargin: '0px 0px -95% 0px', 
-  threshold: 0 
-};
+// --------------------------------========================================
+  // MESIN DETEKTOR MULTI-ARAH (MENGGUNAKAN SET + INDIKATOR AKTIF 5% TERATAS)
+  // --------------------------------========================================
+  
+  // 1. TAMBAHAN: Kantong catatan untuk menyimpan elemen yang sedang menyentuh sensor
+  let intersectingItems = new Set();
+
+  let observerOptions = {
+    root: detailsContainer,
+    // Sesuai permintaan: Atas menempel 0px, bawah ditutup 95% (menyisakan area aktif 5% di atas)
+    rootMargin: '0px 0px -95% 0px', 
+    threshold: 0 
+  };
 
   let observer = new IntersectionObserver((entries) => {
     // ABAIKAN deteksi jika pergerakan layar sedang dikendalikan oleh sistem (Play/Klik Marker)
     if (detailsContainer.classList.contains('sedang-auto-scroll')) return;
 
+    // 2. TAMBAHAN: Masukkan atau hapus elemen dari papan tulis Set secara real-time
     entries.forEach(entry => {
-      // Jika elemen masuk ke zona tengah layar
       if (entry.isIntersecting) {
-        let kandidatTerpilih = entry.target.getAttribute('data-index');
-
-        // Cegah eksekusi berulang jika index yang terbaca masih sama
-        if (kandidatTerpilih !== indexAktif) {
-          indexAktif = kandidatTerpilih; 
-          
-          // Pengguna terdeteksi melakukan scroll manual, hentikan mode Play/Musik
-          hentikanPlay(); 
-
-          if (indexAktif === '-1') {
-            Map.closePopup();
-            if (markerBounds.length > 0) {
-              Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true));
-            }
-          } else {
-            let indexAngka = parseInt(indexAktif);
-            let targetRecord = TimelineRecords[indexAngka];
-            
-            // Buka popup dan fokuskan peta HANYA jika popup belum terbuka
-            if (targetRecord && targetRecord.marker && !targetRecord.marker.isPopupOpen()) {
-              targetRecord.marker.openPopup();
-              fokusKeMarker(targetRecord.marker.getLatLng(), false); 
-            }
-          }
-        }
+        intersectingItems.add(entry.target);
+      } else {
+        intersectingItems.delete(entry.target);
       }
     });
+
+    // 3. TAMBAHAN: Cari secara matematika siapa elemen yang paling pas berada di langit-langit panel
+    let kandidatTerpilih = null;
+    let lokasiGarisTarget = detailsContainer.scrollTop; // Karena margin atas 0px, targetnya tepat di scrollTop kontainer
+    let maxOffsetTop = -1;
+
+    intersectingItems.forEach(item => {
+      let posisiTopItem = item.offsetTop;
+      
+      // Pilih elemen yang posisinya paling mendekati batas atas kontainer saat ini
+      if (posisiTopItem <= lokasiGarisTarget + 20 && posisiTopItem > maxOffsetTop) {
+        maxOffsetTop = posisiTopItem;
+        kandidatTerpilih = item.getAttribute('data-index');
+      }
+    });
+
+    // Antisipasi darurat jika item paling atas (Pengantar index -1) belum menyentuh hitungan offset
+    if (!kandidatTerpilih && intersectingItems.size > 0) {
+      let minIdx = Infinity;
+      intersectingItems.forEach(item => {
+        let idx = parseInt(item.getAttribute('data-index'));
+        if (idx < minIdx) {
+          minIdx = idx;
+          kandidatTerpilih = idx.toString();
+        }
+      });
+    }
+
+    // 4. Eksekusi perubahan marker (Logika bawaanmu, dipicu hanya jika kandidatnya benar-benar berubah)
+    if (kandidatTerpilih !== null && kandidatTerpilih !== indexAktif) {
+      indexAktif = kandidatTerpilih; 
+      
+      // Pengguna terdeteksi melakukan scroll manual, hentikan mode Play/Musik
+      hentikanPlay(); 
+
+      if (indexAktif === '-1') {
+        Map.closePopup();
+        if (markerBounds.length > 0) {
+          Map.flyToBounds(markerBounds, dapatkanOpsiBounds(true));
+        }
+      } else {
+        let indexAngka = parseInt(indexAktif);
+        let targetRecord = TimelineRecords[indexAngka];
+        
+        // Buka popup dan fokuskan peta HANYA jika popup belum terbuka
+        if (targetRecord && targetRecord.marker && !targetRecord.marker.isPopupOpen()) {
+          targetRecord.marker.openPopup();
+          fokusKeMarker(targetRecord.marker.getLatLng(), false); 
+        }
+      }
+    }
   }, observerOptions);
 
   // Pasang sensor ke semua item linimasa setelah dirender
