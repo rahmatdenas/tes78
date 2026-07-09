@@ -94,16 +94,20 @@ function renderMapAndPanel() {
     document.body.appendChild(bgAudio);
   }
 
-  // --------------------------------========================================
-  // SENJATA UTAMA: FUNGSI SCROLL PROGRAMER (MEMBENTENG SEPENUHNYA DARI KAWAT)
-  // --------------------------------========================================
+  // PENGAMAN UX: Hentikan autoplay jika pengguna melakukan scroll/touch manual
+  detailsContainer.addEventListener('touchstart', () => {
+    if (isPlaying) hentikanPlay();
+  }, { passive: true });
+
+  detailsContainer.addEventListener('wheel', () => {
+    if (isPlaying) hentikanPlay();
+  }, { passive: true });
+
   function gulirkanPanelLewatKode(posisiTarget) {
-    // Jalankan toleransi: Jika posisi scroll saat ini sudah sama dengan target, jangan kunci!
     if (Math.abs(detailsContainer.scrollTop - posisiTarget) < 4) {
       detailsContainer.classList.remove('sedang-auto-scroll');
       return;
     }
-    // Kunci kawat jebakan secara total
     detailsContainer.classList.add('sedang-auto-scroll');
     detailsContainer.scrollTo({ top: posisiTarget, behavior: 'smooth' });
   }
@@ -132,14 +136,14 @@ function renderMapAndPanel() {
       
       let targetItem = document.getElementById(`item-${nextIdx}`);
       if (targetItem) {
-let scrollPos = targetItem.offsetTop;
+        let scrollPos = targetItem.offsetTop;
         if (scrollPos < 0) scrollPos = 0;
         gulirkanPanelLewatKode(scrollPos);
       }
     }
   }
 
-let playBtn = document.getElementById('play-btn');
+  let playBtn = document.getElementById('play-btn');
   if (playBtn) {
     let newPlayBtn = playBtn.cloneNode(true);
     playBtn.parentNode.replaceChild(newPlayBtn, playBtn);
@@ -151,11 +155,9 @@ let playBtn = document.getElementById('play-btn');
       if (isPlaying) {
         hentikanPlay(); 
       } else {
-        // CEK POSISI: Apakah kita sedang berada di div terakhir?
         let curIdx = parseInt(indexAktif === '-1' ? '-1' : indexAktif);
         let apakahDiUjung = curIdx >= TimelineRecords.length - 1;
 
-        // 1. Nyalakan status Play secara visual dan audio
         isPlaying = true;
         playBtn.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
         
@@ -165,10 +167,7 @@ let playBtn = document.getElementById('play-btn');
           });
         }
 
-        // 2. Logika Pencegah Glitch
         if (apakahDiUjung) {
-          // JIKA DI TERAKHIR: Kembalikan ke pengantar secara manual, 
-          // tanpa memanggil animasi instan yang berisiko mematikan sistem.
           indexAktif = '-1'; 
           Map.closePopup(); 
           if (markerBounds.length > 0) {
@@ -176,18 +175,15 @@ let playBtn = document.getElementById('play-btn');
           }
           gulirkanPanelLewatKode(0);
         } else {
-          // JIKA DI TENGAH: Langsung eksekusi 1 langkah animasi secara instan
           jalankanAnimasiSatuLangkah(); 
         }
         
-        // 3. Setel mesin waktu untuk langkah selanjutnya secara konsisten
         clearInterval(playInterval); 
         playInterval = setInterval(jalankanAnimasiSatuLangkah, 3000); 
       }
     });
   }
 
-  // Rakit HTML Panel
   TimelineRecords.forEach((record, index) => {
     allHtml += `
       <div class="timeline-item" id="item-${index}" data-index="${index}">
@@ -202,7 +198,6 @@ let playBtn = document.getElementById('play-btn');
   });
   detailsContainer.innerHTML = allHtml;
 
-  // Interaksi Klik Marker Direct di Peta
   TimelineRecords.forEach((record, index) => {
     if (record.lat && record.lon) {
       let marker = L.marker([record.lat, record.lon]).addTo(Map);
@@ -218,30 +213,40 @@ let playBtn = document.getElementById('play-btn');
       `;
       marker.bindPopup(popupContent, { autoPan: false, minWidth: 160, maxWidth: 160 });
       
-marker.on('click', function() {
+      marker.on('click', function() {
         hentikanPlay(); 
-        
-        // UTAMA: Tambahkan 'true' di parameter ke-4 untuk mematikan animasi fly
         fokusKeMarker(marker.getLatLng(), true, 0.3, true); 
         
         let indexStr = index.toString();
         indexAktif = indexStr; 
 
-        // Kunci kawat jebakan
         detailsContainer.classList.add('sedang-auto-scroll');
 
         let targetItem = document.getElementById(`item-${index}`);
         if (targetItem) {
           let scrollPos = targetItem.offsetTop; 
           if (scrollPos < 0) scrollPos = 0;
-          
           detailsContainer.scrollTo({ top: scrollPos, behavior: 'smooth' });
         }
       });
     }
   });
 
-  // Interaksi Klik Tulisan H2 di Panel Linimasa
+  // FITUR BARU: Rute Garis Jejak Perjalanan Kronologis
+  let rutePerjalanan = TimelineRecords
+    .filter(record => record.lat && record.lon)
+    .map(record => [record.lat, record.lon]);
+
+  if (rutePerjalanan.length > 1) {
+    L.polyline(rutePerjalanan, {
+      color: '#822',
+      weight: 3,
+      dashArray: '6, 8',
+      opacity: 0.65,
+      interactive: false
+    }).addTo(Map);
+  }
+
   detailsContainer.addEventListener('click', function(e) {
     if (e.target && e.target.classList.contains('timeline-date')) {
       let parentDiv = e.target.closest('.timeline-item');
@@ -263,7 +268,7 @@ marker.on('click', function() {
           fokusKeMarker(targetRecord.marker.getLatLng(), false); 
           indexAktif = indexStr; 
 
-let scrollPos = parentDiv.offsetTop;
+          let scrollPos = parentDiv.offsetTop;
           if (scrollPos < 0) scrollPos = 0;
           gulirkanPanelLewatKode(scrollPos);
         }
@@ -271,38 +276,20 @@ let scrollPos = parentDiv.offsetTop;
     }
   });
 
-  // --------------------------------========================================
-  // DETEKTOR UTAMA: MENYALAKAN KEMBALI KAWAT TEPAT SAAT SMOOTH SCROLL SELESAI
-  // --------------------------------========================================
   detailsContainer.addEventListener('scrollend', () => {
     detailsContainer.classList.remove('sedang-auto-scroll');
   });
 
-  // --------------------------------========================================
-  // MESIN DETEKTOR MODERN: INTERSECTION OBSERVER (RINGAN & ANTI LAG)
-  // --------------------------------========================================
-  
-  // Konfigurasi zona deteksi (menyisakan area aktif 20% di tengah layar)
-  // Sangat cocok untuk elemen div Anda yang pendek (~70px)
-// --------------------------------========================================
-  // MESIN DETEKTOR MULTI-ARAH (MENGGUNAKAN SET + INDIKATOR AKTIF 5% TERATAS)
-  // --------------------------------========================================
-  
-  // 1. TAMBAHAN: Kantong catatan untuk menyimpan elemen yang sedang menyentuh sensor
   let intersectingItems = new Set();
-
   let observerOptions = {
     root: detailsContainer,
-    // Sesuai permintaan: Atas menempel 0px, bawah ditutup 95% (menyisakan area aktif 5% di atas)
     rootMargin: '0px 0px -95% 0px', 
     threshold: 0 
   };
 
   let observer = new IntersectionObserver((entries) => {
-    // ABAIKAN deteksi jika pergerakan layar sedang dikendalikan oleh sistem (Play/Klik Marker)
     if (detailsContainer.classList.contains('sedang-auto-scroll')) return;
 
-    // 2. TAMBAHAN: Masukkan atau hapus elemen dari papan tulis Set secara real-time
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         intersectingItems.add(entry.target);
@@ -311,22 +298,18 @@ let scrollPos = parentDiv.offsetTop;
       }
     });
 
-    // 3. TAMBAHAN: Cari secara matematika siapa elemen yang paling pas berada di langit-langit panel
     let kandidatTerpilih = null;
-    let lokasiGarisTarget = detailsContainer.scrollTop; // Karena margin atas 0px, targetnya tepat di scrollTop kontainer
+    let lokasiGarisTarget = detailsContainer.scrollTop; 
     let maxOffsetTop = -1;
 
     intersectingItems.forEach(item => {
       let posisiTopItem = item.offsetTop;
-      
-      // Pilih elemen yang posisinya paling mendekati batas atas kontainer saat ini
       if (posisiTopItem <= lokasiGarisTarget + 20 && posisiTopItem > maxOffsetTop) {
         maxOffsetTop = posisiTopItem;
         kandidatTerpilih = item.getAttribute('data-index');
       }
     });
 
-    // Antisipasi darurat jika item paling atas (Pengantar index -1) belum menyentuh hitungan offset
     if (!kandidatTerpilih && intersectingItems.size > 0) {
       let minIdx = Infinity;
       intersectingItems.forEach(item => {
@@ -338,11 +321,8 @@ let scrollPos = parentDiv.offsetTop;
       });
     }
 
-    // 4. Eksekusi perubahan marker (Logika bawaanmu, dipicu hanya jika kandidatnya benar-benar berubah)
     if (kandidatTerpilih !== null && kandidatTerpilih !== indexAktif) {
       indexAktif = kandidatTerpilih; 
-      
-      // Pengguna terdeteksi melakukan scroll manual, hentikan mode Play/Musik
       hentikanPlay(); 
 
       if (indexAktif === '-1') {
@@ -353,8 +333,6 @@ let scrollPos = parentDiv.offsetTop;
       } else {
         let indexAngka = parseInt(indexAktif);
         let targetRecord = TimelineRecords[indexAngka];
-        
-        // Buka popup dan fokuskan peta HANYA jika popup belum terbuka
         if (targetRecord && targetRecord.marker && !targetRecord.marker.isPopupOpen()) {
           targetRecord.marker.openPopup();
           fokusKeMarker(targetRecord.marker.getLatLng(), false); 
@@ -363,7 +341,6 @@ let scrollPos = parentDiv.offsetTop;
     }
   }, observerOptions);
 
-  // Pasang sensor ke semua item linimasa setelah dirender
   document.querySelectorAll('.timeline-item').forEach(item => {
     observer.observe(item);
   });
